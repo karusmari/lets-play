@@ -24,7 +24,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                     .requestMatchers("/users/login").permitAll()
                     .requestMatchers(HttpMethod.GET, "/products","/products/**").permitAll() // everybody can view
-                    .requestMatchers(HttpMethod.POST, "/products/**").permitAll() // only admin can add
+                    .requestMatchers(HttpMethod.POST, "/products/**").hasRole("ADMIN")
                     .requestMatchers(HttpMethod.PUT, "/products/**").hasRole("ADMIN") // only admin can update
                     .requestMatchers(HttpMethod.DELETE, "/products/**").hasRole("ADMIN") // only admin can delete
                     .requestMatchers(HttpMethod.POST, "/users").permitAll()
