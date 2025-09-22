@@ -7,11 +7,17 @@ import org.springframework.stereotype.Service;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @Service
 public class UserService {
     @Autowired
     private UserRepository userRepository;
+
 
     public User createUser(User user) {
 
@@ -54,10 +60,24 @@ public class UserService {
         }
     }
 
+    @PreAuthorize("hasAuthority('ADMIN')")
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
 
+    public String getCurrentUserId() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) return null;
+
+        Object principal = auth.getPrincipal();
+        if (principal instanceof UserDetails) {
+            return ((UserDetails) principal).getUsername(); //part of Spring Security, username = email
+        } else {
+            return principal.toString();
+        }
+    }
+
+    @PreAuthorize("hasAuthority('ADMIN') or #userId == authentication.principal.username")
     public Optional<User> findById(String userId) {
         return userRepository.findById(userId);
     }
@@ -66,7 +86,7 @@ public class UserService {
         return userRepository.findByEmail(email);
     }
 
-
+    @PreAuthorize("hasAuthority('ADMIN') or #userId == authentication.principal.username")
     public User updateUser(String userId, User user) {
         User existingUser = userRepository.findById(userId).orElseThrow();
         existingUser.setName(user.getName());
@@ -75,6 +95,7 @@ public class UserService {
         return userRepository.save(existingUser);
     }
 
+    @PreAuthorize("hasAuthority('ADMIN') or #userId == authentication.principal.username")
     public void deleteUser(String userId) {
         userRepository.deleteById(userId);
     }

@@ -35,6 +35,12 @@ public class UserController {
     public void deleteUser(@PathVariable String userId) {
         userService.deleteUser(userId);
     }
+
+    @GetMapping("/me")
+    public User getCurrentUser() {
+        String currentUserId = userService.getCurrentUserId();
+        return userService.findById(currentUserId).orElseThrow();
+    }
 }
 
 

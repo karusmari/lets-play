@@ -8,6 +8,9 @@ import java.util.List;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.access.prepost.PreAuthorize;
+import jakarta.annotation.security.PermitAll;
+
 
 
 // service is responsible for business logic and data manipulation. It chooses how to handle data and interacts with the repository layer.
@@ -21,6 +24,7 @@ public class ProductService {
         this.productRepository = productRepository;
     }
 
+    @PreAuthorize("hasAnyAuthority('USER', 'ADMIN')")
     public Product createProduct(Product product) {
 
         // to receive the id of the user logged in
@@ -48,6 +52,7 @@ public class ProductService {
         return productRepository.save(product);
     }
 
+    @PermitAll
     public List<Product> getAllProducts() {
         return productRepository.findAll();
     }
@@ -77,6 +82,7 @@ public class ProductService {
                 .anyMatch(a -> a.getAuthority().equals("ADMIN"));
     }
 
+    @PreAuthorize("hasAnyAuthority('ADMIN') or @productService.isOwner(#productId)")
     public Product updateProduct(String productId, Product updatedProduct) {
         Product product = getProductById(productId);
 
@@ -93,6 +99,7 @@ public class ProductService {
         return productRepository.save(product);
     }
 
+    @PreAuthorize("hasAnyAuthority('ADMIN') or @productService.isOwner(#productId)")
     public void deleteProduct(String productId) {
         Product product = getProductById(productId);
         String currentUserId = getCurrentUserId();

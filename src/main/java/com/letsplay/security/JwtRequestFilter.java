@@ -27,7 +27,6 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     private static final List<String> EXCLUDE_URLS = List.of(
             "/api/auth/login",
             "/api/auth/signup",
-            "/api/users", // GET permitAll
             "/products"
     );
 
