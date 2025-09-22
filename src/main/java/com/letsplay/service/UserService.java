@@ -8,10 +8,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.GetMapping;
+import com.letsplay.security.SecurityUtils;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
+import static com.letsplay.security.SecurityUtils.getCurrentUserId;
 
 @Service
 public class UserService {
@@ -66,15 +67,7 @@ public class UserService {
     }
 
     public String getCurrentUserId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null) return null;
-
-        Object principal = auth.getPrincipal();
-        if (principal instanceof UserDetails) {
-            return ((UserDetails) principal).getUsername(); //part of Spring Security, username = email
-        } else {
-            return principal.toString();
-        }
+        return SecurityUtils.getCurrentUserId();
     }
 
     @PreAuthorize("hasAuthority('ADMIN') or #userId == authentication.principal.username")

@@ -5,11 +5,10 @@ import com.letsplay.repository.ProductRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.Authentication;
 import org.springframework.security.access.prepost.PreAuthorize;
 import jakarta.annotation.security.PermitAll;
+import static com.letsplay.security.SecurityUtils.getCurrentUserId;
+import static com.letsplay.security.SecurityUtils.isAdmin;
 
 
 
@@ -27,14 +26,7 @@ public class ProductService {
     @PreAuthorize("hasAnyAuthority('USER', 'ADMIN')")
     public Product createProduct(Product product) {
 
-        // to receive the id of the user logged in
-        Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        String userId;
-        if (principal instanceof UserDetails) {
-            userId = ((UserDetails) principal).getUsername();
-        } else {
-            userId = principal.toString();
-        }
+        String userId = getCurrentUserId(); //checking the current user
         product.setUserId(userId); // setting the userId
 
         if (product.getName() == null || product.getName().isEmpty()) {
@@ -62,39 +54,18 @@ public class ProductService {
                 .orElseThrow(() -> new RuntimeException("Product not found"));
     }
 
-    private String getCurrentUserId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null) return null;
-
-        Object principal = auth.getPrincipal();
-        if (principal instanceof UserDetails) {
-            return ((UserDetails) principal).getUsername();
-        } else {
-            return principal.toString();
-        }
-    }
-
-    private boolean isAdmin() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null) return false;
-
-        return auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ADMIN"));
-    }
-
     @PreAuthorize("hasAnyAuthority('ADMIN') or @productService.isOwner(#productId)")
     public Product updateProduct(String productId, Product updatedProduct) {
         Product product = getProductById(productId);
+        String currentUserId = getCurrentUserId();
+
+        if (!product.getUserId().equals(currentUserId) && !isAdmin()) {
+            throw new RuntimeException("Not authorized to update this product");
+        }
 
         product.setName(updatedProduct.getName());
         product.setPrice(updatedProduct.getPrice());
         product.setDescription(updatedProduct.getDescription());
-
-        //only the owner and admin can update
-        String currentUserId = getCurrentUserId();
-        if (!product.getUserId().equals(currentUserId) && !isAdmin()) {
-            throw new RuntimeException("Not authorized to update this product");
-        }
 
         return productRepository.save(product);
     }
@@ -103,6 +74,7 @@ public class ProductService {
     public void deleteProduct(String productId) {
         Product product = getProductById(productId);
         String currentUserId = getCurrentUserId();
+
         if (!product.getUserId().equals(currentUserId) && !isAdmin()) {
             throw new RuntimeException("Not authorized to delete this product");
         }
