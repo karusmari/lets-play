@@ -38,12 +38,11 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/users/**").hasAuthority("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasAuthority("ADMIN")// only admin can manage users
-                        .requestMatchers(HttpMethod.GET, "/products","/products/**").permitAll() // everybody can view
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasAuthority("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/products","/products/**").permitAll()
                         .requestMatchers(HttpMethod.POST, "/products/**").hasAnyAuthority("USER","ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/products/**").hasAnyAuthority("USER","ADMIN") // only admin can update
-                        .requestMatchers(HttpMethod.DELETE, "/products/**").hasAnyAuthority("USER","ADMIN") // only admin can delete
-                        .anyRequest().authenticated()
+                        .requestMatchers(HttpMethod.PUT, "/products/**").hasAnyAuthority("USER","ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/products/**").hasAnyAuthority("USER","ADMIN")
                 )
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {

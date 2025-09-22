@@ -15,6 +15,11 @@ public class UserService {
 
     public User createUser(User user) {
 
+        Optional<User> existingUser = userRepository.findByEmail(user.getEmail());
+        if (existingUser.isPresent()) {
+            throw new IllegalArgumentException("User with this email already exists");
+        }
+
         if (user.getName() == null || user.getName().isEmpty()) {
             throw new IllegalArgumentException("Name is required");
         }
@@ -38,7 +43,15 @@ public class UserService {
         user.setPassword(encodedPassword);
 
 
-        return userRepository.save(user);
+        try {
+            return userRepository.save(user);
+        } catch (Exception e) {
+            // in case there is a duplication error in the database
+            if (e.getMessage().contains("duplicate key error")) {
+                throw new IllegalArgumentException("User with this email already exists");
+            }
+            throw e;
+        }
     }
 
     public List<User> getAllUsers() {
