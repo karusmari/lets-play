@@ -14,10 +14,29 @@ public class UserService {
     private UserRepository userRepository;
 
     public User createUser(User user) {
+
+        if (user.getName() == null || user.getName().isEmpty()) {
+            throw new IllegalArgumentException("Name is required");
+        }
+        if (user.getEmail() == null || user.getEmail().isEmpty()) {
+            throw new IllegalArgumentException("Email is required");
+        }
+
+        // checking the password
+        if (user.getPassword() == null || user.getPassword().length() < 3) {
+            throw new IllegalArgumentException("Password must be at least 3 characters");
+        }
+
+        // set default role if not provided
+        if (user.getRole() == null || user.getRole().isEmpty()) {
+            user.setRole("USER"); // default
+        }
+
         // hashing password before saving
         String rawPassword = user.getPassword();
         String encodedPassword = new BCryptPasswordEncoder().encode(rawPassword);
         user.setPassword(encodedPassword);
+
 
         return userRepository.save(user);
     }

@@ -16,8 +16,20 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import java.util.List;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 
+
+
+
+// This filter intercepts each HTTP request to validate the JWT token and set the authentication in the security context.
 @Component
 public class JwtRequestFilter extends OncePerRequestFilter {
+
+    //Exclude certain URLs from JWT validation so it doesn't check for a token on these paths
+    private static final List<String> EXCLUDE_URLS = List.of(
+            "/api/auth/login",
+            "/api/auth/signup",
+            "/api/users", // GET permitAll
+            "/products"
+    );
 
     @Autowired // automatically injecting JwtUtil
     private JwtUtil jwtUtil;
@@ -26,6 +38,21 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
 
+        String path = request.getRequestURI();
+        String method = request.getMethod();
+
+        // Letting GET requests and excluded urls through
+        if ("GET".equals(method) && EXCLUDE_URLS.contains(path)) {
+            chain.doFilter(request, response);
+            return;
+        }
+
+        // SKIP JWT validation for auth endpoints
+        if (request.getServletPath().startsWith("/api/auth")) {
+            chain.doFilter(request, response);
+            return;
+        }
+
         final String authHeader = request.getHeader("Authorization");
 
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
@@ -33,14 +60,14 @@ public class JwtRequestFilter extends OncePerRequestFilter {
             try {
 
                 Claims claims = jwtUtil.extractClaims(token);
-                String username = claims.getSubject();
+                String userId = claims.getSubject();
                 String role = claims.get("role", String.class);
 
 
-                if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role.toUpperCase()));
+                if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                    List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(role));
 
-                    User principal = new User(username, "", authorities);
+                    User principal = new User(userId, "", authorities);
 
                     UsernamePasswordAuthenticationToken authToken =
                             new UsernamePasswordAuthenticationToken(principal, null, authorities);

@@ -5,6 +5,7 @@ import com.letsplay.service.ProductService;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
+
 @RestController // indicates that this class is a REST controller and handles HTTP requests
 @RequestMapping("/products") // base URL for all endpoints in this controller
 public class ProductController {
