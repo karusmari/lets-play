@@ -8,6 +8,7 @@ public class ProductResponse {
 
     public ProductResponse() {}
 
+    // User's product response constructor
     public ProductResponse(String name, String description, double price, String sellerName) {
         this.name = name;
         this.description = description;

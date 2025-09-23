@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import java.util.Optional;
+import com.letsplay.dto.UserResponse;
 
 
 
@@ -37,10 +38,12 @@ public class UserController {
     }
 
     @GetMapping("/me")
-    public User getCurrentUser() {
+    public UserResponse getCurrentUser() {
         String currentUserId = userService.getCurrentUserId();
-        return userService.findById(currentUserId).orElseThrow();
+        User user = userService.findById(currentUserId).orElseThrow();
+        return new UserResponse(user.getName(), user.getEmail());
     }
+
 }
 
 
