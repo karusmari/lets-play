@@ -9,10 +9,6 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.security.access.prepost.PreAuthorize;
 import com.letsplay.security.SecurityUtils;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
-import static com.letsplay.security.SecurityUtils.getCurrentUserId;
 
 @Service
 public class UserService {
@@ -30,8 +26,17 @@ public class UserService {
         if (user.getName() == null || user.getName().isEmpty()) {
             throw new IllegalArgumentException("Name is required");
         }
+
+        if (!user.getName().matches("[a-zA-ZäöüÄÖÜ\\-' ]+")) {
+            throw new IllegalArgumentException("Name contains invalid characters");
+        }
+
         if (user.getEmail() == null || user.getEmail().isEmpty()) {
             throw new IllegalArgumentException("Email is required");
+        }
+
+        if (!user.getEmail().matches("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,6}$")) {
+            throw new IllegalArgumentException("Email is invalid");
         }
 
         // checking the password
@@ -74,6 +79,12 @@ public class UserService {
     public Optional<User> findById(String userId) {
         return userRepository.findById(userId);
     }
+
+    public User findByIdOrThrow(String userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+    }
+
 
     public Optional<User> findByEmail(String email) {
         return userRepository.findByEmail(email);

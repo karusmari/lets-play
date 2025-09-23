@@ -10,6 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import java.util.Map;
+import jakarta.validation.Valid;
+import com.letsplay.dto.SignupRequest;
+import com.letsplay.dto.UserResponse;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -20,6 +23,9 @@ public class AuthController {
 
     @Autowired
     private JwtUtil jwtUtil;
+
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody Map<String, String> loginData) {
@@ -34,13 +40,28 @@ public class AuthController {
         }
 
         String token = jwtUtil.generateToken(user);
-        return ResponseEntity.ok(Map.of("token", token, "role", user.getRole()));
+        return ResponseEntity.ok(Map.of("token", token));
     }
 
     @PostMapping("/signup")
-    public User signup(@RequestBody User user) {
-        return userService.createUser(user);
+    public ResponseEntity<?> signup(@RequestBody @Valid SignupRequest request) {
+        User user = new User();
+        user.setName(request.getName());
+        user.setEmail(request.getEmail());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setRole("USER");
+
+        try {
+            User created = userService.createUser(user);
+            // returning only name and email in response
+            UserResponse response = new UserResponse(created.getName(), created.getEmail());
+            return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
+
+
 }
 
 

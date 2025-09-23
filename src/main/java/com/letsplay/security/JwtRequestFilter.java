@@ -17,8 +17,6 @@ import java.util.List;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 
 
-
-
 // This filter intercepts each HTTP request to validate the JWT token and set the authentication in the security context.
 @Component
 public class JwtRequestFilter extends OncePerRequestFilter {

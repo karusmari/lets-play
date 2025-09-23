@@ -14,7 +14,6 @@ import java.util.Date;
 public class JwtUtil {
 
     private final String SECRET_KEY_STRING = "very-long-secret-key-string-with-at-least-32-chars";
-
     private final SecretKey SECRET_KEY = Keys.hmacShaKeyFor(SECRET_KEY_STRING.getBytes(StandardCharsets.UTF_8));
 
     public String generateToken(User user) {
