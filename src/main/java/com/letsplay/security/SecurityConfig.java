@@ -34,17 +34,20 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/login", "/api/auth/login/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/users").hasAuthority("ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/users/**").hasAuthority("ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasAuthority("ADMIN")
+                        .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/users/me").hasAnyAuthority("USER","ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/users/me").hasAnyAuthority("USER","ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/users/me").hasAnyAuthority("USER","ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/users").hasAuthority("ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/users/**").hasAuthority("ADMIN")
                         .requestMatchers(HttpMethod.GET, "/products","/products/**").permitAll()
+
                         .requestMatchers(HttpMethod.POST, "/products/**").hasAnyAuthority("USER","ADMIN")
+
+                        .requestMatchers(HttpMethod.PUT, "/api/users/me").denyAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/users/**").hasAuthority("ADMIN")
                         .requestMatchers(HttpMethod.PUT, "/products/**").hasAnyAuthority("USER","ADMIN")
+
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/**").hasAuthority("ADMIN")
+                        .requestMatchers(HttpMethod.DELETE, "/api/users/me").denyAll()
                         .requestMatchers(HttpMethod.DELETE, "/products/**").hasAnyAuthority("USER","ADMIN")
                 )
                 .exceptionHandling(ex -> ex

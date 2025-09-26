@@ -9,65 +9,57 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.security.access.prepost.PreAuthorize;
 import com.letsplay.security.SecurityUtils;
+import static com.letsplay.security.SecurityUtils.isAdmin;
+import com.letsplay.dto.UpdateUserRequest;
 
 @Service
 public class UserService {
+
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private BCryptPasswordEncoder passwordEncoder;
 
     public User createUser(User user) {
-
-        Optional<User> existingUser = userRepository.findByEmail(user.getEmail());
-        if (existingUser.isPresent()) {
-            throw new IllegalArgumentException("User with this email already exists");
-        }
-
-        if (user.getName() == null || user.getName().isEmpty()) {
-            throw new IllegalArgumentException("Name is required");
-        }
-
-        if (!user.getName().matches("[a-zA-ZäöüÄÖÜ\\-' ]+")) {
-            throw new IllegalArgumentException("Name contains invalid characters");
-        }
-
-        if (user.getEmail() == null || user.getEmail().isEmpty()) {
-            throw new IllegalArgumentException("Email is required");
-        }
-
-        if (!user.getEmail().matches("^[\\w.-]+@[\\w.-]+\\.[a-zA-Z]{2,6}$")) {
-            throw new IllegalArgumentException("Email is invalid");
-        }
-
-        // checking the password
-        if (user.getPassword() == null || user.getPassword().length() < 3) {
-            throw new IllegalArgumentException("Password must be at least 3 characters");
-        }
-
-        // set default role if not provided
-        if (user.getRole() == null || user.getRole().isEmpty()) {
-            user.setRole("USER"); // default
-        }
-
-        // hashing password before saving
-        String rawPassword = user.getPassword();
-        String encodedPassword = new BCryptPasswordEncoder().encode(rawPassword);
-        user.setPassword(encodedPassword);
-
+        checkEmailUniqueness(user.getEmail());
+        prepareUserForSave(user);
 
         try {
             return userRepository.save(user);
         } catch (Exception e) {
-            // in case there is a duplication error in the database
+            handleSaveException(e);
+            return null;
+            }
+        }
+
+        private void checkEmailUniqueness(String email) {
+            if (userRepository.findByEmail(email).isPresent()) {
+                throw new IllegalArgumentException("User with this email already exists");
+            }
+        }
+
+        private void prepareUserForSave(User user) {
+            if (user.getRole() == null || user.getRole().isEmpty()) {
+                user.setRole("USER");
+            }
+            user.setPassword(passwordEncoder.encode(user.getPassword()));
+        }
+
+        private void handleSaveException(Exception e) {
             if (e.getMessage().contains("duplicate key error")) {
                 throw new IllegalArgumentException("User with this email already exists");
             }
-            throw e;
-        }
+            throw new RuntimeException(e);
     }
+
 
     @PreAuthorize("hasAuthority('ADMIN')")
     public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    public List<User> findAll() {
         return userRepository.findAll();
     }
 
@@ -75,7 +67,7 @@ public class UserService {
         return SecurityUtils.getCurrentUserId();
     }
 
-    @PreAuthorize("hasAuthority('ADMIN') or #userId == authentication.principal.username")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public Optional<User> findById(String userId) {
         return userRepository.findById(userId);
     }
@@ -90,16 +82,25 @@ public class UserService {
         return userRepository.findByEmail(email);
     }
 
-    @PreAuthorize("hasAuthority('ADMIN') or #userId == authentication.principal.username")
-    public User updateUser(String userId, User user) {
+    public User updateUser(String userId, UpdateUserRequest request) {
+        if (!isAdmin()) {
+            throw new RuntimeException("Forbidden - only admins can modify users");
+        }
+
         User existingUser = userRepository.findById(userId).orElseThrow();
-        existingUser.setName(user.getName());
-        existingUser.setEmail(user.getEmail());
-        existingUser.setRole(user.getRole());
+
+        if (request.getName() != null) existingUser.setName(request.getName());
+        if (request.getEmail() != null) existingUser.setEmail(request.getEmail());
+
+
+        if (isAdmin() && request.getPassword() != null && !request.getPassword().isEmpty()) {
+            existingUser.setPassword(passwordEncoder.encode(request.getPassword()));
+        }
+
         return userRepository.save(existingUser);
     }
 
-    @PreAuthorize("hasAuthority('ADMIN') or #userId == authentication.principal.username")
+    @PreAuthorize("hasAuthority('ADMIN')")
     public void deleteUser(String userId) {
         userRepository.deleteById(userId);
     }

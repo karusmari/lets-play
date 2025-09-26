@@ -35,7 +35,7 @@ public class AuthController {
         User user = userService.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (!new BCryptPasswordEncoder().matches(password, user.getPassword())) {
+        if (!passwordEncoder.matches(password, user.getPassword())) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid credentials");
         }
 
@@ -48,18 +48,14 @@ public class AuthController {
         User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setPassword(request.getPassword());
         user.setRole("USER");
 
-        try {
-            User created = userService.createUser(user);
-            // returning only name and email in response
-            UserResponse response = new UserResponse(created.getName(), created.getEmail());
-            return ResponseEntity.status(HttpStatus.CREATED).body(response);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
-        }
+        User created = userService.createUser(user);
+        UserResponse response = new UserResponse(created.getName(), created.getEmail());
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
+
 
 
 }

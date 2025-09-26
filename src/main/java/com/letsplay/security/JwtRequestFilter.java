@@ -35,43 +35,16 @@ public class JwtRequestFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
 
-        String path = request.getRequestURI();
-        String method = request.getMethod();
-
-        // Letting GET requests and excluded urls through
-        if ("GET".equals(method) && EXCLUDE_URLS.contains(path)) {
-            chain.doFilter(request, response);
-            return;
-        }
-
-        // SKIP JWT validation for auth endpoints
-        if (request.getServletPath().startsWith("/api/auth")) {
+        if (isExcluded(request)) {
             chain.doFilter(request, response);
             return;
         }
 
         final String authHeader = request.getHeader("Authorization");
-
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             String token = authHeader.substring(7);
             try {
-
-                Claims claims = jwtUtil.extractClaims(token);
-                String userId = claims.getSubject();
-                String role = claims.get("role", String.class);
-
-
-                if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    List<SimpleGrantedAuthority> authorities = List.of(new SimpleGrantedAuthority(role));
-
-                    User principal = new User(userId, "", authorities);
-
-                    UsernamePasswordAuthenticationToken authToken =
-                            new UsernamePasswordAuthenticationToken(principal, null, authorities);
-                    authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
-
-                    SecurityContextHolder.getContext().setAuthentication(authToken);
-                }
+                setAuthentication(request, token);
             } catch (Exception e) {
                 response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid token");
                 return;
@@ -80,5 +53,25 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
         chain.doFilter(request, response);
     }
+
+    private boolean isExcluded(HttpServletRequest request) {
+        return ("GET".equals(request.getMethod()) && EXCLUDE_URLS.contains(request.getRequestURI())) ||
+                request.getServletPath().startsWith("/api/auth");
+    }
+
+    private void setAuthentication(HttpServletRequest request, String token) {
+        Claims claims = jwtUtil.extractClaims(token);
+        String userId = claims.getSubject();
+        String role = claims.get("role", String.class);
+
+        if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            var authorities = List.of(new SimpleGrantedAuthority(role));
+            User principal = new User(userId, "", authorities);
+            var authToken = new UsernamePasswordAuthenticationToken(principal, null, authorities);
+            authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+            SecurityContextHolder.getContext().setAuthentication(authToken);
+        }
+    }
+
 }
 

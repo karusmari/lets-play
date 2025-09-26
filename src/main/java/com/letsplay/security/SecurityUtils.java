@@ -19,11 +19,13 @@ public class SecurityUtils {
     }
 
    //if the user is admin
-    public static boolean isAdmin() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null) return false;
+   public static boolean isAdmin() {
+       var auth = SecurityContextHolder.getContext().getAuthentication();
+       if (auth != null && auth.getAuthorities() != null) {
+           return auth.getAuthorities().stream()
+                   .anyMatch(a -> a.getAuthority().equals("ADMIN"));
+       }
+       return false;
+   }
 
-        return auth.getAuthorities().stream()
-                .anyMatch(a -> a.getAuthority().equals("ADMIN"));
-    }
 }

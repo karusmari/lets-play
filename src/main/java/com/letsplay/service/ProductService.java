@@ -16,7 +16,8 @@ import static com.letsplay.security.SecurityUtils.isAdmin;
 // it doesn't handle HTTP requests directly, that's the controller's job.
 @Service
 public class ProductService {
-    private ProductRepository productRepository;
+
+    private final ProductRepository productRepository;
 
     @Autowired
     public ProductService(ProductRepository productRepository) {
@@ -25,21 +26,10 @@ public class ProductService {
 
     @PreAuthorize("hasAnyAuthority('USER', 'ADMIN')")
     public Product createProduct(Product product) {
+        String currentUserId = getCurrentUserId();
+        product.setUserId(currentUserId);
 
-        String userId = getCurrentUserId(); //checking the current user
-        product.setUserId(userId); // setting the userId
-
-        if (product.getName() == null || product.getName().isEmpty()) {
-            throw new IllegalArgumentException("Product name is required");
-        }
-
-        if (product.getPrice() == null) {
-            throw new IllegalArgumentException("Price is required");
-        }
-
-        if (product.getPrice() <= 0) {
-            throw new IllegalArgumentException("Price must be positive");
-        }
+        validateProduct(product);
 
         return productRepository.save(product);
     }
@@ -49,19 +39,15 @@ public class ProductService {
         return productRepository.findAll();
     }
 
+    @PreAuthorize("hasAnyAuthority('ADMIN') or @productService.isOwner(#productId)")
     public Product getProductById(String productId) {
-        return productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+        return findProductOrThrow(productId);
     }
 
     @PreAuthorize("hasAnyAuthority('ADMIN') or @productService.isOwner(#productId)")
     public Product updateProduct(String productId, Product updatedProduct) {
-        Product product = getProductById(productId);
-        String currentUserId = getCurrentUserId();
-
-        if (!product.getUserId().equals(currentUserId) && !isAdmin()) {
-            throw new RuntimeException("Not authorized to update this product");
-        }
+        Product product = findProductOrThrow(productId);
+        authorizeOwner(product);
 
         product.setName(updatedProduct.getName());
         product.setPrice(updatedProduct.getPrice());
@@ -72,14 +58,40 @@ public class ProductService {
 
     @PreAuthorize("hasAnyAuthority('ADMIN') or @productService.isOwner(#productId)")
     public void deleteProduct(String productId) {
-        Product product = getProductById(productId);
-        String currentUserId = getCurrentUserId();
+        Product product = findProductOrThrow(productId);
+        authorizeOwner(product);
 
-        if (!product.getUserId().equals(currentUserId) && !isAdmin()) {
-            throw new RuntimeException("Not authorized to delete this product");
-        }
         productRepository.deleteById(productId);
     }
 
+    // Helper methods
 
+    private void validateProduct(Product product) {
+        if (product.getName() == null || product.getName().isEmpty()) {
+            throw new IllegalArgumentException("Product name is required");
+        }
+        if (product.getPrice() == null) {
+            throw new IllegalArgumentException("Price is required");
+        }
+        if (product.getPrice() <= 0) {
+            throw new IllegalArgumentException("Price must be positive");
+        }
+    }
+
+    private Product findProductOrThrow(String productId) {
+        return productRepository.findById(productId)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+    }
+
+    private void authorizeOwner(Product product) {
+        String currentUserId = getCurrentUserId();
+        if (!product.getUserId().equals(currentUserId) && !isAdmin()) {
+            throw new RuntimeException("Not authorized to perform this action");
+        }
+    }
+
+    public boolean isOwner(String productId) {
+        Product product = findProductOrThrow(productId);
+        return product.getUserId().equals(getCurrentUserId());
+    }
 }
