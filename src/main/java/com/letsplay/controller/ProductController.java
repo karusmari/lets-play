@@ -8,6 +8,7 @@ import com.letsplay.dto.ProductResponse;
 import com.letsplay.service.UserService;
 import com.letsplay.security.SecurityUtils;
 import com.letsplay.dto.AdminProductResponse;
+import com.letsplay.dto.UpdateProductRequest;
 
 @RestController // indicates that this class is a REST controller and handles HTTP requests
 @RequestMapping("/products") // base URL for all endpoints in this controller
@@ -34,6 +35,7 @@ public class ProductController {
         );
     }
 
+    // get all products (if admin, return productId also)
     @GetMapping
     public List<?> getAllProducts() {
         return productService.getAllProducts().stream()
@@ -59,6 +61,7 @@ public class ProductController {
                 .toList();
     }
 
+    // get a specific product by ID
     @GetMapping("/{productId}")
     public ProductResponse getProductById(@PathVariable String productId) {
         Product p = productService.getProductById(productId);
@@ -70,6 +73,7 @@ public class ProductController {
                 sellerName);
     }
 
+    // get all products of the current logged-in user
     @GetMapping("/my-products")
     public List<AdminProductResponse> getMyProducts() {
         String currentUserId = SecurityUtils.getCurrentUserId();
@@ -87,9 +91,29 @@ public class ProductController {
 
     // renew a specific product by ID
     @PutMapping("/{productId}")
-    public Product updateProduct(@PathVariable String productId, @RequestBody Product product) {
-        return productService.updateProduct(productId, product);
+    public Object updateProduct(@PathVariable String productId,
+                                @RequestBody UpdateProductRequest request) {
+        Product updated = productService.updateProduct(productId, request);
+        String sellerName = userService.findByIdOrThrow(updated.getUserId()).getName();
+
+        if (SecurityUtils.isAdmin()) {
+            return new AdminProductResponse(
+                    updated.getUserId(),
+                    updated.getName(),
+                    updated.getDescription(),
+                    updated.getPrice(),
+                    sellerName
+            );
+        } else {
+            return new ProductResponse(
+                    updated.getName(),
+                    updated.getDescription(),
+                    updated.getPrice(),
+                    sellerName
+            );
+        }
     }
+
 
     // delete a specific product by ID
     @DeleteMapping("/{productId}")
