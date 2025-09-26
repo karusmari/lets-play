@@ -9,6 +9,8 @@ import com.letsplay.service.UserService;
 import com.letsplay.security.SecurityUtils;
 import com.letsplay.dto.AdminProductResponse;
 import com.letsplay.dto.UpdateProductRequest;
+import com.letsplay.dto.CreateProductRequest;
+import jakarta.validation.Valid;
 
 @RestController // indicates that this class is a REST controller and handles HTTP requests
 @RequestMapping("/products") // base URL for all endpoints in this controller
@@ -24,8 +26,8 @@ public class ProductController {
 
     // add new product
     @PostMapping
-    public ProductResponse createProduct(@RequestBody Product product) {
-        Product saved = productService.createProduct(product);
+    public ProductResponse createProduct(@Valid @RequestBody CreateProductRequest request) {
+        Product saved = productService.createProduct(request);
         String sellerName = userService.findByIdOrThrow(saved.getUserId()).getName();
         return new ProductResponse(
                 saved.getName(),

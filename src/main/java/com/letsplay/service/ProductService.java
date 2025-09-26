@@ -10,6 +10,8 @@ import jakarta.annotation.security.PermitAll;
 import static com.letsplay.security.SecurityUtils.getCurrentUserId;
 import static com.letsplay.security.SecurityUtils.isAdmin;
 import com.letsplay.dto.UpdateProductRequest;
+import com.letsplay.dto.CreateProductRequest;
+import com.letsplay.security.SecurityUtils;
 
 
 // service is responsible for business logic and data manipulation. It chooses how to handle data and interacts with the repository layer.
@@ -25,14 +27,18 @@ public class ProductService {
     }
 
     @PreAuthorize("hasAnyAuthority('USER', 'ADMIN')")
-    public Product createProduct(Product product) {
-        String currentUserId = getCurrentUserId();
-        product.setUserId(currentUserId);
+    public Product createProduct(CreateProductRequest request) {
+        Product product = new Product();
+        product.setName(request.getName());
+        product.setDescription(request.getDescription());
+        product.setPrice(request.getPrice());
 
-        validateProduct(product);
+        // adding current logged-in user
+        product.setUserId(SecurityUtils.getCurrentUserId());
 
         return productRepository.save(product);
     }
+
 
     @PermitAll
     public List<Product> getAllProducts() {
