@@ -6,7 +6,7 @@ import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Pattern;
 import org.springframework.data.mongodb.core.index.Indexed;
 
-
+// DTO for user signup requests with validation annotations
 public class SignupRequest {
 
     @Indexed(unique = true)

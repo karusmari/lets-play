@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Max;
 
+// DTO for creating a new product - what the client sends in the request body
 public class CreateProductRequest {
 
     @NotBlank(message = "Name cannot be blank")
@@ -14,7 +15,7 @@ public class CreateProductRequest {
 
     @NotNull(message = "Price is required")
     @Min(value = 1, message = "Price must be at least 1")
-    @Max(value = 1000000, message = "Price cannot exceed 1,000,000")
+    @Max(value = 100000, message = "Price cannot exceed 100000")
     private Double price;
 
     public String getName() { return name; }

@@ -1,14 +1,17 @@
 package com.letsplay.dto;
 
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Digits;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 
+// DTO for updating an existing product - what the client sends in the request body
 public class UpdateProductRequest {
     private String name;
     private String description;
 
-    @DecimalMin(value = "0.01", message = "Price must be greater than 0")
-    @Digits(integer = 6, fraction = 2, message = "Price must be a valid number with max 6 digits and 2 decimals")
+    @NotNull(message = "Price is required")
+    @Min(value = 1, message = "Price must be at least 1")
+    @Max(value = 100000, message = "Price cannot exceed 100000")
     private Double price;
 
     public UpdateProductRequest() {}

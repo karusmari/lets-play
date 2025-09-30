@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import org.springframework.security.access.prepost.PreAuthorize;
-import jakarta.annotation.security.PermitAll;
+
 import static com.letsplay.security.SecurityUtils.getCurrentUserId;
 import static com.letsplay.security.SecurityUtils.isAdmin;
 import com.letsplay.dto.UpdateProductRequest;
@@ -20,12 +20,15 @@ import com.letsplay.security.SecurityUtils;
 public class ProductService {
 
     private final ProductRepository productRepository;
+    private final UserService userService;
 
     @Autowired
-    public ProductService(ProductRepository productRepository) {
+    public ProductService(ProductRepository productRepository, UserService userService) {
         this.productRepository = productRepository;
+        this.userService = userService;
     }
 
+    // Create a new product, only USER and ADMIN can create products
     @PreAuthorize("hasAnyAuthority('USER', 'ADMIN')")
     public Product createProduct(CreateProductRequest request) {
         Product product = new Product();
@@ -35,21 +38,25 @@ public class ProductService {
 
         // adding current logged-in user
         product.setUserId(SecurityUtils.getCurrentUserId());
+        product.setSellerName(userService.findByIdOrThrow(SecurityUtils.getCurrentUserId()).getName()); // lisa see
+
 
         return productRepository.save(product);
     }
 
-
-    @PermitAll
+    // Get all products, accessible by anyone (including unauthenticated users)
+// ProductService.java
     public List<Product> getAllProducts() {
         return productRepository.findAll();
     }
 
+    // Get product by ID, only ADMIN or the owner of the product can access
     @PreAuthorize("hasAnyAuthority('ADMIN') or @productService.isOwner(#productId)")
     public Product getProductById(String productId) {
         return findProductOrThrow(productId);
     }
 
+    // Update product, only ADMIN or the owner of the product can update
     @PreAuthorize("hasAnyAuthority('ADMIN') or @productService.isOwner(#productId)")
     public Product updateProduct(String productId, UpdateProductRequest request) {
         Product product = productRepository.findById(productId)
@@ -73,6 +80,7 @@ public class ProductService {
 
     // Helper methods
 
+    // Validate product details
     private void validateProduct(Product product) {
         if (product.getName() == null || product.getName().isEmpty()) {
             throw new IllegalArgumentException("Product name is required");
@@ -85,11 +93,13 @@ public class ProductService {
         }
     }
 
+    // Find product by ID or throw exception if not found
     private Product findProductOrThrow(String productId) {
         return productRepository.findById(productId)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
     }
 
+    // Authorize that the current user is either the owner of the product or an admin
     private void authorizeOwner(Product product) {
         String currentUserId = getCurrentUserId();
         if (!product.getUserId().equals(currentUserId) && !isAdmin()) {
@@ -97,6 +107,7 @@ public class ProductService {
         }
     }
 
+    // Check if the current user is the owner of the product
     public boolean isOwner(String productId) {
         Product product = findProductOrThrow(productId);
         return product.getUserId().equals(getCurrentUserId());

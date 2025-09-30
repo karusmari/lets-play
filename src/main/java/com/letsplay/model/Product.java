@@ -15,8 +15,7 @@ public class Product {
 
     // constructor - both constructors are needed, empty one for Spring Data and one with parameters for creating objects
     public Product() {}
-    public Product(String productId, String name, String description, double price, String userId, String sellerName) {
-        this.productId = productId;
+    public Product(String name, String description, double price, String userId, String sellerName) {
         this.name = name;
         this.description = description;
         this.price = price;

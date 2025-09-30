@@ -1,5 +1,6 @@
 package com.letsplay.dto;
 
+// Admin's user response class extending UserResponse to include userId
 public class AdminUserResponse extends UserResponse {
     private String userId;
     private String name;

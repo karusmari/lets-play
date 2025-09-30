@@ -3,8 +3,8 @@ package com.letsplay.dto;
 public class UpdateUserRequest {
     private String name;
     private String email;
-    private String password; // only if the user wants to change it
-    private String role;     // only for the admin to change user roles
+    private String password; // the admin can only change the password
+    private String role;     // the admin can change the role of the user
 
     public String getName() { return name; }
     public void setName(String name) { this.name = name; }

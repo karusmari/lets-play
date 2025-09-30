@@ -22,7 +22,7 @@ public class UserController {
     // getting all the users with id, name and email, as only admin can access this endpoint
     @GetMapping
     public List<UserResponse> getAllUsers() {
-        List<User> users = userService.findAll();
+        List<User> users = userService.getAllUsers();
         return users.stream()
                 .map(user -> new AdminUserResponse(user.getId(), user.getName(), user.getEmail()))
                 .collect(Collectors.toList());

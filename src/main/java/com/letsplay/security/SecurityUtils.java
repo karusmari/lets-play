@@ -3,6 +3,7 @@ package com.letsplay.security;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 
 public class SecurityUtils {
 
@@ -18,14 +19,14 @@ public class SecurityUtils {
         }
     }
 
-   //if the user is admin
-   public static boolean isAdmin() {
-       var auth = SecurityContextHolder.getContext().getAuthentication();
-       if (auth != null && auth.getAuthorities() != null) {
-           return auth.getAuthorities().stream()
-                   .anyMatch(a -> a.getAuthority().equals("ADMIN"));
-       }
-       return false;
-   }
+    //if the user is admin
+    public static boolean isAdmin() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !(auth instanceof AnonymousAuthenticationToken)) {
+            return auth.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ADMIN"));
+        }
+        return false;
+    }
 
 }

@@ -7,7 +7,6 @@ import java.util.List;
 import com.letsplay.dto.ProductResponse;
 import com.letsplay.service.UserService;
 import com.letsplay.security.SecurityUtils;
-import com.letsplay.dto.AdminProductResponse;
 import com.letsplay.dto.UpdateProductRequest;
 import com.letsplay.dto.CreateProductRequest;
 import jakarta.validation.Valid;
@@ -30,6 +29,7 @@ public class ProductController {
         Product saved = productService.createProduct(request);
         String sellerName = userService.findByIdOrThrow(saved.getUserId()).getName();
         return new ProductResponse(
+                saved.getProductId(),
                 saved.getName(),
                 saved.getDescription(),
                 saved.getPrice(),
@@ -39,29 +39,18 @@ public class ProductController {
 
     // get all products (if admin, return productId also)
     @GetMapping
-    public List<?> getAllProducts() {
+    public List<ProductResponse> getAllProducts() {
         return productService.getAllProducts().stream()
-                .map(p -> {
-                    String sellerName = userService.findByIdOrThrow(p.getUserId()).getName();
-                    if (SecurityUtils.isAdmin()) {
-                        return new AdminProductResponse(
-                                p.getProductId(),
-                                p.getName(),
-                                p.getDescription(),
-                                p.getPrice(),
-                                sellerName
-                        );
-                    } else {
-                        return new ProductResponse(
-                                p.getName(),
-                                p.getDescription(),
-                                p.getPrice(),
-                                sellerName
-                        );
-                    }
-                })
+                .map(p -> new ProductResponse(
+                        p.getProductId(),
+                        p.getName(),
+                        p.getDescription(),
+                        p.getPrice(),
+                        userService.findByIdOrThrow(p.getUserId()).getName()
+                ))
                 .toList();
     }
+
 
     // get a specific product by ID
     @GetMapping("/{productId}")
@@ -69,6 +58,7 @@ public class ProductController {
         Product p = productService.getProductById(productId);
         String sellerName = userService.findByIdOrThrow(p.getUserId()).getName();
         return new ProductResponse(
+                p.getProductId(),
                 p.getName(),
                 p.getDescription(),
                 p.getPrice(),
@@ -77,11 +67,11 @@ public class ProductController {
 
     // get all products of the current logged-in user
     @GetMapping("/my-products")
-    public List<AdminProductResponse> getMyProducts() {
+    public List<ProductResponse> getMyProducts() {
         String currentUserId = SecurityUtils.getCurrentUserId();
         return productService.getAllProducts().stream()
                 .filter(p -> p.getUserId().equals(currentUserId))
-                .map(p -> new AdminProductResponse(
+                .map(p -> new ProductResponse(
                         p.getProductId(),
                         p.getName(),
                         p.getDescription(),
@@ -98,22 +88,13 @@ public class ProductController {
         Product updated = productService.updateProduct(productId, request);
         String sellerName = userService.findByIdOrThrow(updated.getUserId()).getName();
 
-        if (SecurityUtils.isAdmin()) {
-            return new AdminProductResponse(
-                    updated.getUserId(),
-                    updated.getName(),
-                    updated.getDescription(),
-                    updated.getPrice(),
-                    sellerName
-            );
-        } else {
             return new ProductResponse(
+                    updated.getProductId(),
                     updated.getName(),
                     updated.getDescription(),
                     updated.getPrice(),
                     sellerName
             );
-        }
     }
 
 

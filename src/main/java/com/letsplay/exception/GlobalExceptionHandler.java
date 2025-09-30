@@ -56,7 +56,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(HttpMessageNotReadableException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public Map<String, String> handleInvalidJson(HttpMessageNotReadableException ex) {
-        return Map.of("error", "Invalid JSON or wrong data type");
+        return Map.of("error", "Bad request");
     }
 
 
